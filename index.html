@@ -50,8 +50,8 @@
 </div>
 
 <script>
-// ⚠️ Set this to your deployed web app's /exec URL.
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxxlGUS9PjC4nnsPs8EU-bl2ufR8IrX_EIt5Mjis-aR6A2SB_Qvj8afvExeVfb3uyqypg/exec";
+// Live Web App URL linked to your NEW Apps Script deployment
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwnKAup9d2Gq9sAFPuuV87zQaq3wuwvEIi-fHTWnxZRa_wI9-hF7K_bE9lPqYMTm0WBZA/exec";
 
 const DESIGNATIONS = ["ASSISTANT TEACHER","CLERK","GR-D STAFF","HEADMASTER","HEADMISTRESS","AHM","LIBRARIAN","TEACHER-IN-CHARGE"];
 const GRADE_PAYS = ["1700","1800","2600","2900","3900","4100","4400","4700","4800","5400"];
@@ -82,6 +82,32 @@ const SECTIONS = [
     {id:"dob", label:"Date of Birth", type:"date"},
     {id:"lastGradePay", label:"Last Grade Pay", type:"select", options:GRADE_PAYS}
   ]},
+  { title:"Educational Qualifications", fields:[
+    {id:"eduMadhyamikBoard", label:"Madhyamik - Board/Council", type:"text"},
+    {id:"eduMadhyamikYear", label:"Madhyamik - Year of Passing", type:"number"},
+    {id:"eduMadhyamikPct", label:"Madhyamik - Percentage (%)", type:"number"},
+    {id:"eduMadhyamikRemarks", label:"Madhyamik - Remarks", type:"text"},
+
+    {id:"eduHsBoard", label:"Higher Sec. - Board/Council", type:"text"},
+    {id:"eduHsYear", label:"Higher Sec. - Year of Passing", type:"number"},
+    {id:"eduHsPct", label:"Higher Sec. - Percentage (%)", type:"number"},
+    {id:"eduHsRemarks", label:"Higher Sec. - Remarks", type:"text"},
+
+    {id:"eduGradSubject", label:"B.A / B.Sc / B.Com (Subject/Pass)", type:"text"},
+    {id:"eduGradBoard", label:"Graduate - University", type:"text"},
+    {id:"eduGradYear", label:"Graduate - Year of Passing", type:"number"},
+    {id:"eduGradPct", label:"Graduate - Percentage (%)", type:"number"},
+
+    {id:"eduPGSubject", label:"M.A / M.Sc / M.Com (Subject)", type:"text"},
+    {id:"eduPGBoard", label:"Post Grad - University", type:"text"},
+    {id:"eduPGYear", label:"Post Grad - Year of Passing", type:"number"},
+    {id:"eduPGPct", label:"Post Grad - Percentage (%)", type:"number"},
+
+    {id:"eduBEdBoard", label:"B.Ed / Equivalent - University", type:"text"},
+    {id:"eduBEdYear", label:"B.Ed / Equivalent - Year of Passing", type:"number"},
+    {id:"eduBEdPct", label:"B.Ed / Equivalent - Percentage (%)", type:"number"},
+    {id:"eduBEdRemarks", label:"B.Ed / Equivalent - Remarks", type:"text"}
+  ]},
   { title:"Service History", fields:[
     {id:"prevSchool1", label:"Previous School - 1 (earliest)", type:"text"},
     {id:"prevSchool2", label:"Previous School - 2 (if any)", type:"text"},
@@ -107,7 +133,8 @@ const SECTIONS = [
     {id:"hraMode", label:"HRA Type", type:"select", options:["PERCENT","FIXED"], hint:"Choose PERCENT to enter a rate below, or FIXED to enter a flat amount."},
     {id:"hraPercentValue", label:"HRA Rate (%), if PERCENT", type:"number"},
     {id:"hraFixedAmount", label:"Fixed HRA Amount (Rs.), if FIXED", type:"number"},
-    {id:"commutationPercent", label:"Commutation (%) e.g. 0.4 = 40%", type:"number"},
+    {id:"commutationOpted", label:"Commutation Pension [Yes / No]", type:"select", options:["YES","NO"]},
+    {id:"commutationPercent", label:"Commutation (%) if Yes", type:"number"},
     {id:"ppoNo", label:"PPO No.", type:"text"},
     {id:"ppoMemo", label:"PPO Memo No. & Date", type:"text"},
     {id:"pfGross", label:"PF Gross (Rs.)", type:"number"}
@@ -209,13 +236,6 @@ document.getElementById("btnSubmit").addEventListener("click", async ()=>{
   const btn = document.getElementById("btnSubmit");
   btn.disabled = true; btn.textContent = "Submitting…";
   try{
-    // Apps Script web apps respond via a redirect (to script.googleusercontent.com)
-    // that doesn't carry CORS headers, so the browser can't let us read the
-    // response even on success. mode:"no-cors" avoids that failure: it still
-    // sends the request and the server still runs doPost() and saves the row,
-    // we just can't read anything back — so a resolved fetch() here means the
-    // request reached Google; it does NOT by itself prove the row was written
-    // (check the sheet if you want ground truth).
     await fetch(WEB_APP_URL, {
       method: "POST",
       mode: "no-cors",
