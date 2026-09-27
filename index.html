@@ -209,15 +209,20 @@ document.getElementById("btnSubmit").addEventListener("click", async ()=>{
   const btn = document.getElementById("btnSubmit");
   btn.disabled = true; btn.textContent = "Submitting…";
   try{
-    // text/plain keeps this a "simple request" so no CORS preflight is needed.
-    const res = await fetch(WEB_APP_URL, {
+    // Apps Script web apps respond via a redirect (to script.googleusercontent.com)
+    // that doesn't carry CORS headers, so the browser can't let us read the
+    // response even on success. mode:"no-cors" avoids that failure: it still
+    // sends the request and the server still runs doPost() and saves the row,
+    // we just can't read anything back — so a resolved fetch() here means the
+    // request reached Google; it does NOT by itself prove the row was written
+    // (check the sheet if you want ground truth).
+    await fetch(WEB_APP_URL, {
       method: "POST",
+      mode: "no-cors",
       headers: {"Content-Type": "text/plain;charset=utf-8"},
       body: JSON.stringify(data)
     });
-    const json = await res.json().catch(()=>({ok:true}));
-    if(json.ok === false) throw new Error(json.error || "Submission failed.");
-    showStatus("Thank you — your details have been submitted successfully.", "ok");
+    showStatus("Thank you — your details have been submitted.", "ok");
     document.getElementById("pensionForm").reset ? document.getElementById("pensionForm").reset() : render();
     render();
   }catch(err){
