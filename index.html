@@ -1,183 +1,89 @@
 /**
- * TFHS PENSION DATA-COLLECTION FORM — BUILDER SCRIPT
- * ---------------------------------------------------
- * Generates a Google Form whose questions match, field-for-field, the
- * "Pension Application & Certificate Generator" HTML tool's SECTIONS
- * schema — so responses can flow straight back into that tool via the
- * companion `pension_form_importer.html` page.
+ * TFHS PENSION DATA-COLLECTION — WEB APP BACKEND
+ * ------------------------------------------------
+ * Receives JSON submissions posted from `pension_data_collection_form.html`
+ * and appends them as a row in a Google Sheet (auto-created on first run).
+ * The sheet's column headers exactly match the labels used by
+ * `pension_form_importer.html`, so that importer keeps working unchanged —
+ * just export this sheet as CSV (File > Download > .csv) and feed it in.
  *
- * HOW TO USE
- * 1. Go to https://script.google.com  ->  New project.
- * 2. Delete the placeholder code, paste this whole file in, save.
- * 3. Select the function `buildPensionForm` in the toolbar dropdown, click Run.
- * 4. First run: click "Review permissions" -> allow (it only touches
- *    Forms/Sheets in your own Drive).
- * 5. Open "Executions" (or View > Logs) to see two links it prints:
- *      - Edit URL   (to tweak wording, add your school logo, etc.)
- *      - Live URL   (share this with staff who are retiring/superannuating)
- * 6. A response spreadsheet named "<Form title> - Responses" is created
- *    automatically in your Drive and linked to the form.
- *
- * NOTE: "School Information & Dashboard Controls" fields are deliberately
- * left OUT of the form — those are per-school config, not per-pensioner
- * data, and stay filled in once inside the main HTML tool (or via the
- * "School / Dashboard Defaults" panel in the importer page).
+ * DEPLOY
+ * 1. script.google.com -> New project -> paste this in as Code.gs.
+ * 2. Deploy -> New deployment -> type "Web app".
+ *      Execute as: Me
+ *      Who has access: Anyone
+ * 3. Copy the /exec URL it gives you — that's WEB_APP_URL in the HTML form.
+ *    (If you already have a deployment ID, your URL is:
+ *     https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec )
+ * 4. Whenever you edit this script, use Deploy -> Manage deployments ->
+ *    edit (pencil) -> New version, so the live /exec URL picks up changes.
  */
 
-function buildPensionForm() {
-  var form = FormApp.create('TFHS — Pension / Superannuation Data Collection Form');
-  form.setDescription(
-    'Taldangra Fulmati High School (H.S.) — please fill in your details accurately. ' +
-    'This information will be used to prepare your pension papers, service book ' +
-    'certificates and related documents. Use BLOCK LETTERS where possible.'
-  );
-  form.setCollectEmail(false);
-  form.setAllowResponseEdits(true);
-  form.setLimitOneResponsePerUser(false);
-  form.setShowLinkToRespondAgain(true);
+const HEADERS = [
+  "Timestamp",
+  "School Name","School Address","Sub-Division","School Recognised W.E.F.","School e-Mail ID","HOI Mobile No.","Current User ID (School, e-Pension)","DISE / UDISE Code of School","Treasury","Present HOI Status","Administrative Status (M.C. post)",
+  "Name of the Staff","Sex","Designation","Employee Code","Application ID","Employee Mobile No.","Date of Birth","Last Grade Pay",
+  "Previous School - 1 (earliest)","Previous School - 2 (if any)","Date of First Joining (Service)","Date of Joining Previous School-2","DOJ in this (current) School","Post Held at Previous School - 1","Post Held at Previous School - 2","Medical Leave Enjoyed (days)","Half Pay Leave (days)","Extra Ordinary Leave (days)","Special Leave (days)","HRA / Salary Overdrawn, if any (Rs.)","Challan No. & Date (if refunded)",
+  "Last (Final) Basic Pay (Rs.)","Basic Pay Before Last Increment (Rs.)","Existing Increment Date (as on date for Pay Cert)","Basic Pay As On That Date (Rs.)","Date of Last/Next 1st-July Increment","D.A. @ (%)","HRA Type","HRA Rate (%), if PERCENT","Fixed HRA Amount (Rs.), if FIXED","Commutation (%) e.g. 0.4 = 40%","PPO No.","PPO Memo No. & Date","PF Gross (Rs.)",
+  "Spouse Name","Spouse Relation","Spouse Status","Spouse Office Name & Address (if in service)","Spouse Department (if in service)","Spouse Date of Joining (if in service)","Spouse Designation (if in service)","Spouse Date of Birth","Self / Spouse Residential Address","Spouse Bank Name","Spouse Bank Branch","Spouse Account No.",
+  "Child 1 - Name","Child 1 - Relation","Child 1 - Date of Birth","Child 1 - Gratuity Share % (optional)",
+  "Child 2 - Name","Child 2 - Relation","Child 2 - Date of Birth","Child 2 - Gratuity Share % (optional)",
+  "Child 3 - Name","Child 3 - Relation","Child 3 - Date of Birth","Child 3 - Gratuity Share % (optional)",
+  "Reason for Charge Hand-over","Incoming Officer - Name","Incoming Officer - Post","Charge Hand-over Date of Execution","T.I.C. Charge From (existing user-id date)","CPC Name / Address (Circle Project Co-ordinator)"
+];
 
-  // Create + link a response spreadsheet automatically.
-  var ss = SpreadsheetApp.create(form.getTitle() + ' - Responses');
-  form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
+// Same ids the client form sends, in the same order as HEADERS (minus Timestamp).
+const FIELD_IDS = [
+  "schoolName","schoolAddress","schoolSubDiv","schoolRecognisedDate","schoolMail","hoiMobile","currentUserId","diseCode","treasury","hoiStatus","adminStatus",
+  "staffName","gender","designation","employeeCode","applicationId","employeeMobile","dob","lastGradePay",
+  "prevSchool1","prevSchool2","dojFirst","dojPrevSchool2","dojThisSchool","prevSchoolPost1","prevSchoolPost2","medicalLeave","halfPayLeave","extraOrdinaryLeave","specialLeave","hraOverdrawn","challanNoDate",
+  "lastBasicPay","lastButBasicPay","existingIncrementDate","existingIncrementAmount","lastIncrementDate","daPercent","hraMode","hraPercentValue","hraFixedAmount","commutationPercent","ppoNo","ppoMemo","pfGross",
+  "spouseName","spouseRelation","spouseStatus","spouseOffice","spouseDept","spouseDoj","spouseDesignation","spouseDob","selfSpouseAddress","spouseBankName","spouseBranchName","spouseAccountNo",
+  "child1Name","child1Relation","child1Dob","child1GratuityShare",
+  "child2Name","child2Relation","child2Dob","child2GratuityShare",
+  "child3Name","child3Relation","child3Dob","child3GratuityShare",
+  "chargeHandOverCause","chargeHandOverToName","chargeHandOverToPost","chargeHandOverDate","ticChargeFrom","cpcName"
+];
 
-  var DESIGNATIONS = ["ASSISTANT TEACHER","CLERK","GR-D STAFF","HEADMASTER","HEADMISTRESS","AHM","LIBRARIAN","TEACHER-IN-CHARGE"];
-  var GRADE_PAYS = ["1700","1800","2600","2900","3900","4100","4400","4700","4800","5400"];
-  var CHARGE_CAUSES = ["Superannuation Retirement From Service","Resignation from the Post of Teacher-In-Charge / H.M.","Others"];
+function getOrCreateSheet_() {
+  const props = PropertiesService.getScriptProperties();
+  let ssId = props.getProperty('SHEET_ID');
+  let ss;
+  if (ssId) {
+    try { ss = SpreadsheetApp.openById(ssId); } catch (e) { ss = null; }
+  }
+  if (!ss) {
+    ss = SpreadsheetApp.create('TFHS Pension Data Collection - Responses');
+    props.setProperty('SHEET_ID', ss.getId());
+  }
+  let sheet = ss.getSheetByName('Responses');
+  if (!sheet) {
+    sheet = ss.getSheets()[0];
+    sheet.setName('Responses');
+  }
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(HEADERS);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
 
-  // ---- SECTIONS (mirrors the HTML tool's SECTIONS array, minus School Info) ----
-  var SECTIONS = [
-    {
-      title: "Employee Details",
-      fields: [
-        {id:"staffName", label:"Name of the Staff", type:"text", required:true},
-        {id:"gender", label:"Sex", type:"list", options:["MALE","FEMALE"]},
-        {id:"designation", label:"Designation", type:"list", options:DESIGNATIONS},
-        {id:"employeeCode", label:"Employee Code", type:"text"},
-        {id:"applicationId", label:"Application ID", type:"text"},
-        {id:"employeeMobile", label:"Employee Mobile No.", type:"text"},
-        {id:"dob", label:"Date of Birth", type:"date"},
-        {id:"lastGradePay", label:"Last Grade Pay", type:"list", options:GRADE_PAYS}
-      ]
-    },
-    {
-      title: "Service History",
-      fields: [
-        {id:"prevSchool1", label:"Previous School - 1 (earliest)", type:"text"},
-        {id:"prevSchool2", label:"Previous School - 2 (if any)", type:"text"},
-        {id:"dojFirst", label:"Date of First Joining (Service)", type:"date", help:"Start of service at Previous School-1. If there was no previous school at all, set this equal to 'DOJ in this School'."},
-        {id:"dojPrevSchool2", label:"Date of Joining Previous School-2", type:"date", help:"Leave equal to 'DOJ in this School' if there was only ONE previous school. Leave blank/same as first-joining if there was NO previous school."},
-        {id:"dojThisSchool", label:"DOJ in this (current) School", type:"date"},
-        {id:"prevSchoolPost1", label:"Post Held at Previous School - 1", type:"list", options:DESIGNATIONS},
-        {id:"prevSchoolPost2", label:"Post Held at Previous School - 2", type:"list", options:DESIGNATIONS},
-        {id:"medicalLeave", label:"Medical Leave Enjoyed (days)", type:"number"},
-        {id:"halfPayLeave", label:"Half Pay Leave (days)", type:"number"},
-        {id:"extraOrdinaryLeave", label:"Extra Ordinary Leave (days)", type:"number"},
-        {id:"specialLeave", label:"Special Leave (days)", type:"number"},
-        {id:"hraOverdrawn", label:"HRA / Salary Overdrawn, if any (Rs.)", type:"number"},
-        {id:"challanNoDate", label:"Challan No. & Date (if refunded)", type:"text"}
-      ]
-    },
-    {
-      title: "Pay & Pension Inputs",
-      fields: [
-        {id:"lastBasicPay", label:"Last (Final) Basic Pay (Rs.)", type:"number", help:"The final basic pay used for pension/gratuity — i.e. AFTER the last applicable 1st-July increment, if any."},
-        {id:"lastButBasicPay", label:"Basic Pay Before Last Increment (Rs.)", type:"number", help:"The basic pay as currently drawn, BEFORE the 1st-July increment referenced below."},
-        {id:"existingIncrementDate", label:"Existing Increment Date (as on date for Pay Cert)", type:"date", help:"The 1st-July date on which the Basic Pay below was already confirmed/drawn."},
-        {id:"existingIncrementAmount", label:"Basic Pay As On That Date (Rs.)", type:"number", help:"Leave blank to reuse 'Basic Pay Before Last Increment' above."},
-        {id:"lastIncrementDate", label:"Date of Last/Next 1st-July Increment", type:"date", help:"Leave blank or equal to the increment-before date if no increment falls due before retirement."},
-        {id:"daPercent", label:"D.A. @ (%)", type:"number"},
-        {id:"hraMode", label:"HRA Type", type:"list", options:["PERCENT","FIXED"], help:"Choose PERCENT to enter a rate below, or FIXED to enter a flat amount."},
-        {id:"hraPercentValue", label:"HRA Rate (%), if PERCENT", type:"number"},
-        {id:"hraFixedAmount", label:"Fixed HRA Amount (Rs.), if FIXED", type:"number"},
-        {id:"commutationPercent", label:"Commutation (%) e.g. 0.4 = 40%", type:"number"},
-        {id:"ppoNo", label:"PPO No.", type:"text"},
-        {id:"ppoMemo", label:"PPO Memo No. & Date", type:"text"},
-        {id:"pfGross", label:"PF Gross (Rs.)", type:"number"}
-      ]
-    },
-    {
-      title: "Spouse Details",
-      fields: [
-        {id:"spouseName", label:"Spouse Name", type:"text"},
-        {id:"spouseRelation", label:"Spouse Relation", type:"list", options:["WIFE","HUSBAND"]},
-        {id:"spouseStatus", label:"Spouse Status", type:"list", options:["IN SERVICE","HOUSEWIFE","UN MARRIED","NOT IN SERVICE"]},
-        {id:"spouseOffice", label:"Spouse Office Name & Address (if in service)", type:"paragraph"},
-        {id:"spouseDept", label:"Spouse Department (if in service)", type:"text"},
-        {id:"spouseDoj", label:"Spouse Date of Joining (if in service)", type:"date"},
-        {id:"spouseDesignation", label:"Spouse Designation (if in service)", type:"text"},
-        {id:"spouseDob", label:"Spouse Date of Birth", type:"date"},
-        {id:"selfSpouseAddress", label:"Self / Spouse Residential Address", type:"paragraph"},
-        {id:"spouseBankName", label:"Spouse Bank Name", type:"text"},
-        {id:"spouseBranchName", label:"Spouse Bank Branch", type:"text"},
-        {id:"spouseAccountNo", label:"Spouse Account No.", type:"text"}
-      ]
-    },
-    {
-      title: "Children (Nominees)",
-      fields: [
-        {id:"child1Name", label:"Child 1 - Name", type:"text"},
-        {id:"child1Relation", label:"Child 1 - Relation", type:"list", options:["SON","DAUGHTER"]},
-        {id:"child1Dob", label:"Child 1 - Date of Birth", type:"date"},
-        {id:"child1GratuityShare", label:"Child 1 - Gratuity Share % (optional)", type:"number", help:"Leave blank to split evenly among children entered."},
-        {id:"child2Name", label:"Child 2 - Name", type:"text"},
-        {id:"child2Relation", label:"Child 2 - Relation", type:"list", options:["SON","DAUGHTER"]},
-        {id:"child2Dob", label:"Child 2 - Date of Birth", type:"date"},
-        {id:"child2GratuityShare", label:"Child 2 - Gratuity Share % (optional)", type:"number"},
-        {id:"child3Name", label:"Child 3 - Name", type:"text"},
-        {id:"child3Relation", label:"Child 3 - Relation", type:"list", options:["SON","DAUGHTER"]},
-        {id:"child3Dob", label:"Child 3 - Date of Birth", type:"date"},
-        {id:"child3GratuityShare", label:"Child 3 - Gratuity Share % (optional)", type:"number"}
-      ]
-    },
-    {
-      title: "Charge Hand-over / Administrative",
-      fields: [
-        {id:"chargeHandOverCause", label:"Reason for Charge Hand-over", type:"list", options:CHARGE_CAUSES},
-        {id:"chargeHandOverToName", label:"Incoming Officer - Name", type:"text"},
-        {id:"chargeHandOverToPost", label:"Incoming Officer - Post", type:"list", options:DESIGNATIONS},
-        {id:"chargeHandOverDate", label:"Charge Hand-over Date of Execution", type:"date"},
-        {id:"ticChargeFrom", label:"T.I.C. Charge From (existing user-id date)", type:"date"},
-        {id:"cpcName", label:"CPC Name / Address (Circle Project Co-ordinator)", type:"text"}
-      ]
-    }
-  ];
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    const sheet = getOrCreateSheet_();
+    const row = [new Date()];
+    FIELD_IDS.forEach(id => row.push(body[id] !== undefined ? String(body[id]) : ""));
+    sheet.appendRow(row);
+    return ContentService.createTextOutput(JSON.stringify({ok: true}))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ok: false, error: String(err)}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
 
-  var numberValidation = FormApp.createTextValidation()
-    .setHelpText('Please enter a number.')
-    .requireNumber()
-    .build();
-
-  SECTIONS.forEach(function (section, idx) {
-    var pb = form.addPageBreakItem().setTitle(section.title);
-    if (idx > 0) { /* page break auto-chains from previous page */ }
-
-    section.fields.forEach(function (f) {
-      var item;
-      switch (f.type) {
-        case 'text':
-          item = form.addTextItem().setTitle(f.label);
-          break;
-        case 'number':
-          item = form.addTextItem().setTitle(f.label).setValidation(numberValidation);
-          break;
-        case 'paragraph':
-          item = form.addParagraphTextItem().setTitle(f.label);
-          break;
-        case 'date':
-          item = form.addDateItem().setTitle(f.label);
-          break;
-        case 'list':
-          item = form.addListItem().setTitle(f.label).setChoiceValues(f.options);
-          break;
-        default:
-          item = form.addTextItem().setTitle(f.label);
-      }
-      if (f.help) item.setHelpText(f.help);
-      if (f.required) item.setRequired(true);
-    });
-  });
-
-  Logger.log('EDIT URL : ' + form.getEditUrl());
-  Logger.log('LIVE URL : ' + form.getPublishedUrl());
-  Logger.log('RESPONSE SHEET : ' + ss.getUrl());
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({ok: true, message: "TFHS Pension data-collection endpoint is live."}))
+    .setMimeType(ContentService.MimeType.JSON);
 }
