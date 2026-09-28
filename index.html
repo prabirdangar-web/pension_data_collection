@@ -11,27 +11,49 @@
   header{background:var(--navy-dark);color:#fff;padding:18px 22px;text-align:center;}
   header h1{margin:0 0 4px;font-size:18px;}
   header p{margin:0;font-size:12.5px;color:#9fb3c8;}
-  .wrap{max-width:900px;margin:20px auto;padding:0 16px 60px;}
-  fieldset{border:1px solid var(--line);border-radius:8px;padding:14px 16px 16px;margin:0 0 18px;background:#fff;}
+  .wrap{max-width:1000px;margin:20px auto;padding:0 16px 80px;}
+  fieldset{border:1px solid var(--line);border-radius:8px;padding:14px 16px 16px;margin:0 0 18px;background:#fff;min-width:0;}
   legend{font-size:13px;font-weight:700;color:var(--navy);padding:0 6px;}
   .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px 18px;}
   label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;font-weight:600;}
   input[type=text],input[type=number],input[type=date],select,textarea{
     width:100%;padding:7px 8px;border:1px solid #c9cfd6;border-radius:5px;font-size:13px;font-family:inherit;background:#fff;color:var(--ink);
   }
-  textarea{resize:vertical;min-height:44px;grid-column:1/-1;}
+  textarea{resize:vertical;min-height:44px;}
   input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:0;border-color:var(--gold);}
   .hint{font-size:10.5px;color:#8a93a0;margin-top:2px;}
+  .note{font-size:11.5px;color:var(--muted);margin:0 0 10px;}
   .full{grid-column:1/-1;}
-  .actions{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:14px 22px;display:flex;gap:10px;justify-content:center;margin:0 -16px;}
+  .actions{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 22px;display:flex;gap:10px;justify-content:center;z-index:10;}
   .btn{cursor:pointer;border:none;border-radius:6px;padding:11px 22px;font-size:14px;font-weight:600;}
   .btn-primary{background:var(--gold);color:#fff;}
   .btn-primary:hover{background:#8f611f;}
   .btn-primary:disabled{opacity:.6;cursor:default;}
-  .status{max-width:900px;margin:14px auto;padding:10px 14px;border-radius:6px;font-size:13px;display:none;}
+  .status{max-width:1000px;margin:14px auto;padding:10px 14px;border-radius:6px;font-size:13px;display:none;}
   .status.ok{background:#e2f3e8;color:var(--ok);display:block;}
   .status.err{background:#fbe6e4;color:var(--danger);display:block;}
   .required::after{content:" *";color:var(--danger);}
+
+  /* ---------- inactive (greyed-out) state ---------- */
+  .off{opacity:.45;}
+  .off input,.off select,.off textarea,input:disabled,select:disabled,textarea:disabled,input[readonly]{background:#eef0f2;cursor:not-allowed;}
+  fieldset.off{background:#f6f7f8;}
+
+  /* ---------- one-line-per-row tables (education / service) ---------- */
+  .rowgrid{display:grid;gap:8px 10px;align-items:end;margin-bottom:8px;}
+  .edu{grid-template-columns:130px 1.1fr 1.4fr 78px 78px 1.1fr;}
+  .svc{grid-template-columns:190px 1.6fr 150px 1.2fr;}
+  .rowhead{font-size:11px;font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:4px;align-items:end;}
+  .degree{font-size:12.5px;font-weight:700;color:var(--navy);padding-bottom:8px;}
+  .cell{min-width:0;}
+  .mlabel{display:none;font-size:10.5px;color:var(--muted);font-weight:600;margin-bottom:2px;}
+  @media(max-width:760px){
+    .rowhead{display:none;}
+    .edu,.svc{grid-template-columns:1fr 1fr;padding:10px 0;border-bottom:1px dashed var(--line);}
+    .degree{grid-column:1/-1;padding-bottom:0;}
+    .mlabel{display:block;}
+    .cell.empty{display:none;}
+  }
 </style>
 </head>
 <body>
@@ -42,11 +64,11 @@
 
 <div class="wrap">
   <div id="topStatus" class="status"></div>
-  <form id="pensionForm"></form>
+  <form id="pensionForm" onsubmit="return false"></form>
 </div>
 
 <div class="actions">
-  <button class="btn btn-primary" id="btnSubmit">Submit</button>
+  <button class="btn btn-primary" id="btnSubmit" type="button">Submit</button>
 </div>
 
 <script>
@@ -57,14 +79,21 @@ const DESIGNATIONS = ["ASSISTANT TEACHER","CLERK","GR-D STAFF","HEADMASTER","HEA
 const GRADE_PAYS = ["1700","1800","2600","2900","3900","4100","4400","4700","4800","5400"];
 const CHARGE_CAUSES = ["Superannuation Retirement From Service","Resignation from the Post of Teacher-In-Charge / H.M.","Others"];
 const ADMIN_STATUSES = ["President [M.C.]","Member Secretary [Ad-hoc Committee]","Administrator","Secretary [M.C.]"];
+const HOI_DESIGNATIONS = ["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"];
+const EMAIL_DEFAULT = "@gmail.com";
 
+/* ---------- field groups that switch on/off ---------- */
+const CHARGE_FIELDS  = ["chargeHandOverCause","chargeHandOverToName","chargeHandOverToPost","chargeHandOverDate","ticChargeFrom"];
+const SPOUSE_SERVICE = ["spouseOffice","spouseDept","spouseDoj","spouseDesignation"];
+
+/* ---------- simple sections (generic grid) ---------- */
 const SECTIONS = [
   { title:"School Information", fields:[
     {id:"schoolName", label:"School Name", type:"text", required:true},
     {id:"schoolAddress", label:"School Address", type:"textarea"},
     {id:"schoolSubDiv", label:"Sub-Division", type:"text"},
     {id:"schoolRecognisedDate", label:"School Recognised W.E.F.", type:"date"},
-    {id:"schoolMail", label:"School e-Mail ID", type:"text"},
+    {id:"schoolMail", label:"School e-Mail ID", type:"text", email:true, hint:"Type your ID before @gmail.com (change the domain if different)."},
     {id:"hoiMobile", label:"HOI Mobile No.", type:"text"},
     {id:"currentUserId", label:"Current User ID (School, e-Pension)", type:"text"},
     {id:"diseCode", label:"DISE / UDISE Code of School", type:"text"},
@@ -82,40 +111,8 @@ const SECTIONS = [
     {id:"dob", label:"Date of Birth", type:"date"},
     {id:"lastGradePay", label:"Last Grade Pay", type:"select", options:GRADE_PAYS}
   ]},
-  { title:"Educational Qualifications", fields:[
-    {id:"eduMadhyamikBoard", label:"Madhyamik - Board/Council", type:"text"},
-    {id:"eduMadhyamikYear", label:"Madhyamik - Year of Passing", type:"number"},
-    {id:"eduMadhyamikPct", label:"Madhyamik - Percentage (%)", type:"number"},
-    {id:"eduMadhyamikRemarks", label:"Madhyamik - Remarks", type:"text"},
-
-    {id:"eduHsBoard", label:"Higher Sec. - Board/Council", type:"text"},
-    {id:"eduHsYear", label:"Higher Sec. - Year of Passing", type:"number"},
-    {id:"eduHsPct", label:"Higher Sec. - Percentage (%)", type:"number"},
-    {id:"eduHsRemarks", label:"Higher Sec. - Remarks", type:"text"},
-
-    {id:"eduGradSubject", label:"B.A / B.Sc / B.Com (Subject/Pass)", type:"text"},
-    {id:"eduGradBoard", label:"Graduate - University", type:"text"},
-    {id:"eduGradYear", label:"Graduate - Year of Passing", type:"number"},
-    {id:"eduGradPct", label:"Graduate - Percentage (%)", type:"number"},
-
-    {id:"eduPGSubject", label:"M.A / M.Sc / M.Com (Subject)", type:"text"},
-    {id:"eduPGBoard", label:"Post Grad - University", type:"text"},
-    {id:"eduPGYear", label:"Post Grad - Year of Passing", type:"number"},
-    {id:"eduPGPct", label:"Post Grad - Percentage (%)", type:"number"},
-
-    {id:"eduBEdBoard", label:"B.Ed / Equivalent - University", type:"text"},
-    {id:"eduBEdYear", label:"B.Ed / Equivalent - Year of Passing", type:"number"},
-    {id:"eduBEdPct", label:"B.Ed / Equivalent - Percentage (%)", type:"number"},
-    {id:"eduBEdRemarks", label:"B.Ed / Equivalent - Remarks", type:"text"}
-  ]},
-  { title:"Service History", fields:[
-    {id:"prevSchool1", label:"Previous School - 1 (earliest)", type:"text"},
-    {id:"prevSchool2", label:"Previous School - 2 (if any)", type:"text"},
-    {id:"dojFirst", label:"Date of First Joining (Service)", type:"date", hint:"Start of service at Previous School-1. If there was no previous school at all, set this equal to 'DOJ in this School'."},
-    {id:"dojPrevSchool2", label:"Date of Joining Previous School-2", type:"date", hint:"Leave equal to 'DOJ in this School' if there was only ONE previous school. Leave blank/same as first-joining if there was NO previous school."},
-    {id:"dojThisSchool", label:"DOJ in this (current) School", type:"date"},
-    {id:"prevSchoolPost1", label:"Post Held at Previous School - 1", type:"select", options:DESIGNATIONS},
-    {id:"prevSchoolPost2", label:"Post Held at Previous School - 2", type:"select", options:DESIGNATIONS},
+  { title:"Educational Qualifications", layout:"edu" },
+  { title:"Service History", layout:"service", fields:[
     {id:"medicalLeave", label:"Medical Leave Enjoyed (days)", type:"number"},
     {id:"halfPayLeave", label:"Half Pay Leave (days)", type:"number"},
     {id:"extraOrdinaryLeave", label:"Extra Ordinary Leave (days)", type:"number"},
@@ -134,7 +131,7 @@ const SECTIONS = [
     {id:"hraPercentValue", label:"HRA Rate (%), if PERCENT", type:"number"},
     {id:"hraFixedAmount", label:"Fixed HRA Amount (Rs.), if FIXED", type:"number"},
     {id:"commutationOpted", label:"Commutation Pension [Yes / No]", type:"select", options:["YES","NO"]},
-    {id:"commutationPercent", label:"Commutation (%) if Yes", type:"number"},
+    {id:"commutationPercent", label:"Commutation (%) if Yes", type:"number", attrs:'min="1" max="100" step="any" placeholder="e.g. 40"', hint:"Enter the whole percentage — type 40 for 40% (not 0.4)."},
     {id:"ppoNo", label:"PPO No.", type:"text"},
     {id:"ppoMemo", label:"PPO Memo No. & Date", type:"text"},
     {id:"pfGross", label:"PF Gross (Rs.)", type:"number"}
@@ -167,7 +164,7 @@ const SECTIONS = [
     {id:"child3Dob", label:"Child 3 - Date of Birth", type:"date"},
     {id:"child3GratuityShare", label:"Child 3 - Gratuity Share % (optional)", type:"number"}
   ]},
-  { title:"Charge Hand-over / Administrative", fields:[
+  { title:"Charge Hand-over / Administrative", id:"chargeSection", note:"Applicable only if the employee is Headmaster / Headmistress / Teacher-in-Charge. Otherwise this part stays inactive.", fields:[
     {id:"chargeHandOverCause", label:"Reason for Charge Hand-over", type:"select", options:CHARGE_CAUSES},
     {id:"chargeHandOverToName", label:"Incoming Officer - Name", type:"text"},
     {id:"chargeHandOverToPost", label:"Incoming Officer - Post", type:"select", options:DESIGNATIONS},
@@ -177,6 +174,16 @@ const SECTIONS = [
   ]}
 ];
 
+/* ---------- education: one degree per line ---------- */
+const EDU_ROWS = [
+  {label:"Madhyamik",                 board:"eduMadhyamikBoard", year:"eduMadhyamikYear", pct:"eduMadhyamikPct", remarks:"eduMadhyamikRemarks", boardLabel:"Board / Council"},
+  {label:"Higher Secondary",          board:"eduHsBoard",        year:"eduHsYear",        pct:"eduHsPct",        remarks:"eduHsRemarks",        boardLabel:"Board / Council"},
+  {label:"Graduate (B.A/B.Sc/B.Com)", subject:"eduGradSubject", board:"eduGradBoard",     year:"eduGradYear",     pct:"eduGradPct", boardLabel:"University"},
+  {label:"Post Graduate (M.A/M.Sc/M.Com)", subject:"eduPGSubject", board:"eduPGBoard",     year:"eduPGYear",       pct:"eduPGPct",   boardLabel:"University"},
+  {label:"B.Ed / Equivalent",         board:"eduBEdBoard",       year:"eduBEdYear",       pct:"eduBEdPct",       remarks:"eduBEdRemarks",       boardLabel:"University"}
+];
+
+/* ---------- renderers ---------- */
 function fieldHtml(f){
   const req = f.required ? ' required' : '';
   const reqClass = f.required ? ' class="required"' : '';
@@ -186,54 +193,192 @@ function fieldHtml(f){
   } else if(f.type === "textarea"){
     control = `<textarea id="${f.id}"${req}></textarea>`;
   } else {
-    control = `<input type="${f.type}" id="${f.id}"${req}>`;
+    control = `<input type="${f.type}" id="${f.id}"${req} ${f.attrs||""}>`;
   }
   const hint = f.hint ? `<div class="hint">${f.hint}</div>` : "";
-  const wrapClass = f.type === "textarea" ? " full" : "";
-  return `<div${wrapClass?` class="${wrapClass.trim()}"`:""}><label${reqClass}>${f.label}</label>${control}${hint}</div>`;
+  const cls = "fld" + (f.type === "textarea" ? " full" : "");
+  return `<div class="${cls}"><label${reqClass}>${f.label}</label>${control}${hint}</div>`;
+}
+
+function cell(label, inner){
+  return inner ? `<div class="cell"><span class="mlabel">${label}</span>${inner}</div>` : `<div class="cell empty"></div>`;
+}
+
+function eduHtml(){
+  const head = `<div class="rowgrid edu rowhead"><div>Degree</div><div>Subject</div><div>Board / University</div><div>Year</div><div>%</div><div>Remarks</div></div>`;
+  const rows = EDU_ROWS.map(r => `
+    <div class="rowgrid edu">
+      <div class="degree">${r.label}</div>
+      ${cell("Subject", r.subject ? `<input type="text" id="${r.subject}">` : "")}
+      ${cell(r.boardLabel, `<input type="text" id="${r.board}">`)}
+      ${cell("Year", `<input type="number" id="${r.year}" min="1950" max="2100">`)}
+      ${cell("%", `<input type="number" id="${r.pct}" step="any" min="0" max="100">`)}
+      ${cell("Remarks", r.remarks ? `<input type="text" id="${r.remarks}">` : "")}
+    </div>`).join("");
+  return head + rows;
+}
+
+function serviceHtml(sec){
+  const postOpts = `<option value="">-- select --</option>` + DESIGNATIONS.map(o=>`<option value="${o}">${o}</option>`).join("");
+  return `
+    <div class="form-grid" style="margin-bottom:12px">
+      <div class="fld"><label class="required">Number of previous schools (before this school)</label>
+        <select id="prevCount" data-skip="1">
+          <option value="">-- select --</option>
+          <option value="0">0 — No previous school (this is my only school)</option>
+          <option value="1">1 — One previous school</option>
+          <option value="2">2 — Two previous schools</option>
+        </select>
+      </div>
+    </div>
+    <p class="note">Row 1 is always your <b>current school</b>. Previous-school rows become active only as per the number selected above.</p>
+    <div class="rowgrid svc rowhead"><div>School</div><div>Name of School</div><div>Date of Joining</div><div>Post Held</div></div>
+
+    <div class="rowgrid svc">
+      <div class="degree">1. Current school (this school)</div>
+      ${cell("Name of School", `<input type="text" id="curSchoolName" data-skip="1" readonly>`)}
+      ${cell("DOJ in this school", `<input type="date" id="dojThisSchool">`)}
+      ${cell("Post Held", `<input type="text" id="curPostShow" data-skip="1" readonly placeholder="(as per Designation)">`)}
+    </div>
+    <div class="rowgrid svc">
+      <div class="degree">Previous school — earliest</div>
+      ${cell("Name of School", `<input type="text" id="prevSchool1">`)}
+      ${cell("Date of Joining (first service)", `<input type="date" id="dojFirst">`)}
+      ${cell("Post Held", `<select id="prevSchoolPost1">${postOpts}</select>`)}
+    </div>
+    <div class="rowgrid svc">
+      <div class="degree">Previous school — second (just before this school)</div>
+      ${cell("Name of School", `<input type="text" id="prevSchool2">`)}
+      ${cell("Date of Joining", `<input type="date" id="dojPrevSchool2">`)}
+      ${cell("Post Held", `<select id="prevSchoolPost2">${postOpts}</select>`)}
+    </div>
+
+    <div class="form-grid" style="margin-top:14px">
+      ${sec.fields.map(fieldHtml).join("")}
+    </div>`;
 }
 
 function render(){
   const form = document.getElementById("pensionForm");
-  form.innerHTML = SECTIONS.map(sec => `
-    <fieldset>
-      <legend>${sec.title}</legend>
-      <div class="form-grid">
-        ${sec.fields.map(fieldHtml).join("")}
-      </div>
-    </fieldset>
-  `).join("");
+  form.innerHTML = SECTIONS.map(sec => {
+    let body;
+    if(sec.layout === "edu") body = eduHtml();
+    else if(sec.layout === "service") body = serviceHtml(sec);
+    else body = `${sec.note ? `<p class="note">${sec.note}</p>` : ""}<div class="form-grid">${sec.fields.map(fieldHtml).join("")}</div>`;
+    return `<fieldset${sec.id ? ` id="${sec.id}"` : ""}><legend>${sec.title}</legend>${body}</fieldset>`;
+  }).join("");
+  $("schoolMail").value = EMAIL_DEFAULT;
+  applyRules();
 }
-render();
 
+/* ---------- helpers ---------- */
+function $(id){ return document.getElementById(id); }
+
+function setOn(ids, on){
+  ids.forEach(id => {
+    const el = $(id); if(!el) return;
+    el.disabled = !on;
+    if(!on) el.value = "";
+    const w = el.closest(".fld,.cell");
+    if(w) w.classList.toggle("off", !on);
+  });
+}
+
+// date that is either typed by the user (manual) or mirrors the current-school DOJ (auto)
+function setAutoDate(id, manual, cur){
+  const el = $(id), w = el.closest(".cell");
+  if(manual){
+    if(el.dataset.auto === "1"){ el.value = ""; el.dataset.auto = ""; }
+    el.readOnly = false; w.classList.remove("off");
+  } else {
+    el.value = cur; el.dataset.auto = "1"; el.readOnly = true; w.classList.add("off");
+  }
+}
+
+/* ---------- conditional rules ---------- */
+function applyRules(){
+  // 1. Service history / previous schools
+  const n = $("prevCount").value;
+  const has1 = (n === "1" || n === "2"), has2 = (n === "2");
+  const cur = $("dojThisSchool").value;
+  $("curSchoolName").value = $("schoolName").value;
+  $("curPostShow").value = $("designation").value;
+  setOn(["prevSchool1","prevSchoolPost1"], has1);
+  setOn(["prevSchool2","prevSchoolPost2"], has2);
+  // no previous school -> first joining = DOJ here; only one previous -> 2nd joining = DOJ here
+  setAutoDate("dojFirst", has1, cur);
+  setAutoDate("dojPrevSchool2", has2, cur);
+
+  // 2. Commutation % only when YES
+  setOn(["commutationPercent"], $("commutationOpted").value === "YES");
+
+  // 3. Spouse service details only when IN SERVICE
+  setOn(SPOUSE_SERVICE, $("spouseStatus").value === "IN SERVICE");
+
+  // 4. Charge hand-over only for HM / HMistress / TIC
+  const isHoi = HOI_DESIGNATIONS.includes($("designation").value);
+  setOn(CHARGE_FIELDS, isHoi);
+  $("chargeSection").classList.toggle("off", !isHoi);
+}
+
+/* ---------- data / status ---------- */
 function collect(){
   const data = {};
-  SECTIONS.forEach(sec => sec.fields.forEach(f => {
-    const el = document.getElementById(f.id);
-    data[f.id] = el ? el.value.trim() : "";
-  }));
+  document.querySelectorAll("#pensionForm input, #pensionForm select, #pensionForm textarea").forEach(el => {
+    if(el.dataset.skip || !el.id) return;
+    data[el.id] = (el.value || "").trim();
+  });
+  if(data.schoolMail === EMAIL_DEFAULT) data.schoolMail = "";   // untouched default = blank
   return data;
 }
 
 function showStatus(msg, kind){
-  const el = document.getElementById("topStatus");
+  const el = $("topStatus");
   el.className = "status " + (kind === "ok" ? "ok" : "err");
   el.textContent = msg;
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
-document.getElementById("btnSubmit").addEventListener("click", async ()=>{
+function fail(msg, id){
+  showStatus(msg, "err");
+  if(id && $(id)) $(id).focus();
+}
+
+/* ---------- events ---------- */
+const formEl = $("pensionForm");
+formEl.addEventListener("input", applyRules);
+formEl.addEventListener("change", applyRules);
+
+// e-mail: keep "@gmail.com" pre-loaded, cursor placed before it
+formEl.addEventListener("focusin", e => {
+  if(e.target.id === "schoolMail" && e.target.value === EMAIL_DEFAULT){
+    setTimeout(() => e.target.setSelectionRange(0, 0), 0);
+  }
+});
+formEl.addEventListener("blur", e => {
+  if(e.target.id === "schoolMail" && e.target.value.trim() === "") e.target.value = EMAIL_DEFAULT;
+}, true);
+
+$("btnSubmit").addEventListener("click", async () => {
   const data = collect();
-  if(!data.staffName){
-    showStatus("Please enter your Name of the Staff before submitting.", "err");
-    document.getElementById("staffName").focus();
-    return;
+
+  if(!data.staffName) return fail("Please enter your Name of the Staff before submitting.", "staffName");
+  if($("prevCount").value === "") return fail("Please select the number of previous schools (select 0 if none).", "prevCount");
+
+  if(data.schoolMail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.schoolMail))
+    return fail("Please enter a valid School e-Mail ID (e.g. name@gmail.com).", "schoolMail");
+
+  if(data.commutationOpted === "YES"){
+    const c = parseFloat(data.commutationPercent);
+    if(isNaN(c) || c <= 0 || c > 100) return fail("Please enter the Commutation % as a whole number, e.g. 40.", "commutationPercent");
+    if(c < 1) return fail("Commutation % looks like a fraction. Enter 40 for 40% (not 0.4).", "commutationPercent");
   }
+
   if(WEB_APP_URL.includes("YOUR_DEPLOYMENT_ID")){
-    showStatus("This form isn't wired to a live endpoint yet — set WEB_APP_URL near the top of the script.", "err");
-    return;
+    return fail("This form isn't wired to a live endpoint yet — set WEB_APP_URL near the top of the script.");
   }
-  const btn = document.getElementById("btnSubmit");
+
+  const btn = $("btnSubmit");
   btn.disabled = true; btn.textContent = "Submitting…";
   try{
     await fetch(WEB_APP_URL, {
@@ -242,15 +387,16 @@ document.getElementById("btnSubmit").addEventListener("click", async ()=>{
       headers: {"Content-Type": "text/plain;charset=utf-8"},
       body: JSON.stringify(data)
     });
-    showStatus("Thank you — your details have been submitted.", "ok");
-    document.getElementById("pensionForm").reset ? document.getElementById("pensionForm").reset() : render();
     render();
+    showStatus("Thank you — your details have been submitted.", "ok");
   }catch(err){
     showStatus("Submission failed: " + (err.message || err) + ". Please check your internet connection and try again.", "err");
   }finally{
     btn.disabled = false; btn.textContent = "Submit";
   }
 });
+
+render();
 </script>
 </body>
 </html>
