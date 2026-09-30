@@ -29,6 +29,8 @@
   .btn-primary{background:var(--gold);color:#fff;}
   .btn-primary:hover{background:#8f611f;}
   .btn-primary:disabled{opacity:.6;cursor:default;}
+  .btn-wa{background:#25D366;color:#fff;}
+  .btn-wa:hover{background:#1ebe5b;}
   .status{max-width:1000px;margin:14px auto;padding:10px 14px;border-radius:6px;font-size:13px;display:none;}
   .status.ok{background:#e2f3e8;color:var(--ok);display:block;}
   .status.err{background:#fbe6e4;color:var(--danger);display:block;}
@@ -41,7 +43,7 @@
 
   /* ---------- one-line-per-row tables (education / service) ---------- */
   .rowgrid{display:grid;gap:8px 10px;align-items:end;margin-bottom:8px;}
-  .edu{grid-template-columns:130px 1.1fr 1.4fr 78px 78px 1.1fr;}
+  .edu{grid-template-columns:170px 1.1fr 1.3fr 105px 80px 1.1fr;}
   .svc{grid-template-columns:190px 1.6fr 150px 1.2fr;}
   .rowhead{font-size:11px;font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:4px;align-items:end;}
   .degree{font-size:12.5px;font-weight:700;color:var(--navy);padding-bottom:8px;}
@@ -53,6 +55,7 @@
     .degree{grid-column:1/-1;padding-bottom:0;}
     .mlabel{display:block;}
     .cell.empty{display:none;}
+    .actions{flex-wrap:wrap;}
   }
 </style>
 </head>
@@ -69,6 +72,7 @@
 
 <div class="actions">
   <button class="btn btn-primary" id="btnSubmit" type="button">Submit</button>
+  <button class="btn btn-wa" id="btnWA" type="button">Share JSON on WhatsApp</button>
 </div>
 
 <script>
@@ -81,6 +85,8 @@ const CHARGE_CAUSES = ["Superannuation Retirement From Service","Resignation fro
 const ADMIN_STATUSES = ["President [M.C.]","Member Secretary [Ad-hoc Committee]","Administrator","Secretary [M.C.]"];
 const HOI_DESIGNATIONS = ["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"];
 const EMAIL_DEFAULT = "@gmail.com";
+const WA_NUMBER = "919434654678";   // 91 = India country code
+let lastData = null;                // last submitted data (form resets after submit)
 
 /* ---------- field groups that switch on/off ---------- */
 const CHARGE_FIELDS  = ["chargeHandOverCause","chargeHandOverToName","chargeHandOverToPost","chargeHandOverDate","ticChargeFrom"];
@@ -176,11 +182,11 @@ const SECTIONS = [
 
 /* ---------- education: one degree per line ---------- */
 const EDU_ROWS = [
-  {label:"Madhyamik",                 board:"eduMadhyamikBoard", year:"eduMadhyamikYear", pct:"eduMadhyamikPct", remarks:"eduMadhyamikRemarks", boardLabel:"Board / Council"},
-  {label:"Higher Secondary",          board:"eduHsBoard",        year:"eduHsYear",        pct:"eduHsPct",        remarks:"eduHsRemarks",        boardLabel:"Board / Council"},
-  {label:"Graduate (B.A/B.Sc/B.Com)", subject:"eduGradSubject", board:"eduGradBoard",     year:"eduGradYear",     pct:"eduGradPct", boardLabel:"University"},
-  {label:"Post Graduate (M.A/M.Sc/M.Com)", subject:"eduPGSubject", board:"eduPGBoard",     year:"eduPGYear",       pct:"eduPGPct",   boardLabel:"University"},
-  {label:"B.Ed / Equivalent",         board:"eduBEdBoard",       year:"eduBEdYear",       pct:"eduBEdPct",       remarks:"eduBEdRemarks",       boardLabel:"University"}
+  {label:"Madhyamik",                      subject:"eduMadhyamikSubject", board:"eduMadhyamikBoard", year:"eduMadhyamikYear", pct:"eduMadhyamikPct", remarks:"eduMadhyamikRemarks", boardLabel:"Board / Council"},
+  {label:"Higher Secondary",               subject:"eduHsSubject",        board:"eduHsBoard",        year:"eduHsYear",        pct:"eduHsPct",        remarks:"eduHsRemarks",        boardLabel:"Board / Council"},
+  {label:"Graduate (B.A/B.Sc/B.Com)",      subject:"eduGradSubject",      board:"eduGradBoard",      year:"eduGradYear",      pct:"eduGradPct",      remarks:"eduGradRemarks",      boardLabel:"University"},
+  {label:"Post Graduate (M.A/M.Sc/M.Com)", subject:"eduPGSubject",        board:"eduPGBoard",        year:"eduPGYear",        pct:"eduPGPct",        remarks:"eduPGRemarks",        boardLabel:"University"},
+  {label:"B.Ed / Equivalent",              subject:"eduBEdSubject",       board:"eduBEdBoard",       year:"eduBEdYear",       pct:"eduBEdPct",       remarks:"eduBEdRemarks",       boardLabel:"University"}
 ];
 
 /* ---------- renderers ---------- */
@@ -205,13 +211,13 @@ function cell(label, inner){
 }
 
 function eduHtml(){
-  const head = `<div class="rowgrid edu rowhead"><div>Degree</div><div>Subject</div><div>Board / University</div><div>Year</div><div>%</div><div>Remarks</div></div>`;
+  const head = `<div class="rowgrid edu rowhead"><div>Degree</div><div>Subject</div><div>Board / University</div><div>Year of Passing</div><div>%</div><div>Remarks</div></div>`;
   const rows = EDU_ROWS.map(r => `
     <div class="rowgrid edu">
       <div class="degree">${r.label}</div>
       ${cell("Subject", r.subject ? `<input type="text" id="${r.subject}">` : "")}
       ${cell(r.boardLabel, `<input type="text" id="${r.board}">`)}
-      ${cell("Year", `<input type="number" id="${r.year}" min="1950" max="2100">`)}
+      ${cell("Year of Passing", `<input type="number" id="${r.year}" min="1950" max="2100" placeholder="YYYY">`)}
       ${cell("%", `<input type="number" id="${r.pct}" step="any" min="0" max="100">`)}
       ${cell("Remarks", r.remarks ? `<input type="text" id="${r.remarks}">` : "")}
     </div>`).join("");
@@ -387,13 +393,26 @@ $("btnSubmit").addEventListener("click", async () => {
       headers: {"Content-Type": "text/plain;charset=utf-8"},
       body: JSON.stringify(data)
     });
+    lastData = data;
     render();
-    showStatus("Thank you — your details have been submitted.", "ok");
+    showStatus("Thank you — your details have been submitted. You may also tap \"Share JSON on WhatsApp\" to send a copy.", "ok");
   }catch(err){
     showStatus("Submission failed: " + (err.message || err) + ". Please check your internet connection and try again.", "err");
   }finally{
     btn.disabled = false; btn.textContent = "Submit";
   }
+});
+
+$("btnWA").addEventListener("click", () => {
+  let data = collect();
+  if(!data.staffName){
+    if(lastData) data = lastData;
+    else return fail("Please fill in the form (at least the Name of the Staff) before sharing.", "staffName");
+  }
+  const clean = {};
+  Object.keys(data).forEach(k => { if(data[k] !== "") clean[k] = data[k]; });
+  const text = JSON.stringify(clean, null, 1);
+  window.open("https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(text), "_blank");
 });
 
 render();
