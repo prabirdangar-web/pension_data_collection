@@ -5,79 +5,111 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pension / Superannuation Data Collection Form</title>
 <style>
-  :root{--navy:#1b3a5c;--navy-dark:#122840;--gold:#a9772f;--line:#c7ccd1;--ink:#1c1c1c;--muted:#5b6570;--ok:#2e7d4f;--danger:#a4322a;}
+  :root{--navy:#1b3a5c;--navy-dark:#0f2a45;--navy-mid:#244b73;--gold:#b0803a;--gold-d:#8f651f;--line:#d5dae0;--ink:#1c2430;--muted:#5f6b78;--ok:#2e7d4f;--danger:#b3372e;--bg:#eef1f5;--card:#fff;--soft:#f6f8fb;}
   *{box-sizing:border-box;}
-  body{margin:0;font-family:"Segoe UI",Arial,sans-serif;background:#e9ecef;color:var(--ink);}
-  header{background:var(--navy-dark);color:#fff;padding:18px 22px;text-align:center;}
-  header h1{margin:0 0 4px;font-size:18px;}
-  header p{margin:0;font-size:12.5px;color:#9fb3c8;}
-  .wrap{max-width:1000px;margin:20px auto;padding:0 16px 80px;}
-  fieldset{border:1px solid var(--line);border-radius:8px;padding:14px 16px 16px;margin:0 0 18px;background:#fff;min-width:0;}
-  legend{font-size:13px;font-weight:700;color:var(--navy);padding:0 6px;}
-  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px 18px;}
-  label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px;font-weight:600;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,Arial,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  header{background:linear-gradient(135deg,var(--navy-dark),var(--navy-mid));color:#fff;padding:26px 22px 40px;text-align:center;position:relative;}
+  header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:4px;background:linear-gradient(90deg,var(--gold),#d9ad62,var(--gold));}
+  .crest{width:54px;height:54px;border-radius:50%;margin:0 auto 10px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:26px;}
+  header h1{margin:0 0 6px;font-size:21px;font-weight:700;letter-spacing:.2px;}
+  header p{margin:0 auto;max-width:640px;font-size:13px;color:#c5d4e3;line-height:1.5;}
+  .progress{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:8px 18px;display:flex;align-items:center;gap:12px;}
+  .progress .bar{flex:1;height:8px;background:#e3e8ee;border-radius:99px;overflow:hidden;}
+  .progress .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gold),#d9ad62);border-radius:99px;transition:width .3s;}
+  .progress span{font-size:12px;font-weight:700;color:var(--navy);min-width:92px;text-align:right;}
+  .wrap{max-width:1040px;margin:22px auto;padding:0 16px 120px;}
+  fieldset{border:none;border-radius:12px;padding:0 0 20px;margin:0 0 20px;background:var(--card);min-width:0;box-shadow:0 1px 3px rgba(16,35,60,.08),0 6px 18px rgba(16,35,60,.05);overflow:hidden;}
+  legend{float:left;width:100%;padding:13px 20px;margin:0 0 18px;font-size:15px;font-weight:700;color:var(--navy);background:linear-gradient(90deg,#f1f5fa,#fff);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;}
+  legend + *{clear:both;}
+  fieldset > *:not(legend){margin-left:20px;margin-right:20px;}
+  .secno{width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 26px;}
+  .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px 20px;}
+  label{display:block;font-size:12px;color:#44505e;margin-bottom:5px;font-weight:600;}
   input[type=text],input[type=number],input[type=date],select,textarea{
-    width:100%;padding:7px 8px;border:1px solid #c9cfd6;border-radius:5px;font-size:13px;font-family:inherit;background:#fff;color:var(--ink);
+    width:100%;padding:10px 11px;border:1.5px solid #cfd6de;border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:var(--ink);transition:border-color .15s,box-shadow .15s;min-height:40px;
   }
-  textarea{resize:vertical;min-height:44px;}
-  input:focus,select:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:0;border-color:var(--gold);}
-  .hint{font-size:10.5px;color:#8a93a0;margin-top:2px;}
-  .note{font-size:11.5px;color:var(--muted);margin:0 0 10px;}
+  select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'><path d='M1 1l5 5 5-5' fill='none' stroke='%231b3a5c' stroke-width='2'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+  textarea{resize:vertical;min-height:64px;}
+  input:hover,select:hover,textarea:hover{border-color:#a9b4c0;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(176,128,58,.2);}
+  input.bad,select.bad{border-color:var(--danger);box-shadow:0 0 0 3px rgba(179,55,46,.15);}
+  .hint{font-size:11px;color:#7a8592;margin-top:4px;line-height:1.4;}
+  .note{font-size:12.5px;color:var(--muted);margin:0 20px 14px;background:var(--soft);border-left:3px solid var(--gold);padding:8px 12px;border-radius:0 6px 6px 0;}
   .full{grid-column:1/-1;}
-  .actions{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 22px;display:flex;gap:10px;justify-content:center;z-index:10;}
-  .btn{cursor:pointer;border:none;border-radius:6px;padding:11px 22px;font-size:14px;font-weight:600;}
-  .btn-primary{background:var(--gold);color:#fff;}
-  .btn-primary:hover{background:#8f611f;}
-  .btn-primary:disabled{opacity:.6;cursor:default;}
-  .btn-wa{background:#25D366;color:#fff;}
-  .btn-wa:hover{background:#1ebe5b;}
-  .status{max-width:1000px;margin:14px auto;padding:10px 14px;border-radius:6px;font-size:13px;display:none;}
-  .status.ok{background:#e2f3e8;color:var(--ok);display:block;}
-  .status.err{background:#fbe6e4;color:var(--danger);display:block;}
+  .actions{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);backdrop-filter:blur(6px);border-top:1px solid var(--line);padding:12px 22px;display:flex;gap:10px;justify-content:center;z-index:30;box-shadow:0 -4px 14px rgba(16,35,60,.08);}
+  .btn{cursor:pointer;border:none;border-radius:8px;padding:12px 34px;font-size:15px;font-weight:700;transition:.15s;}
+  .btn-primary{background:linear-gradient(180deg,var(--gold),var(--gold-d));color:#fff;box-shadow:0 2px 6px rgba(143,101,31,.35);}
+  .btn-primary:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:.6;cursor:default;transform:none;}
+  .btn-ghost{background:#fff;color:var(--navy);border:1.5px solid var(--line);}
+  .status{max-width:1040px;margin:14px auto 0;padding:12px 16px;border-radius:8px;font-size:13.5px;display:none;font-weight:600;}
+  .status.ok{background:#e2f3e8;color:var(--ok);display:block;border:1px solid #b9dfc7;}
+  .status.err{background:#fbe6e4;color:var(--danger);display:block;border:1px solid #f0c1bc;}
   .required::after{content:" *";color:var(--danger);}
-
-  /* ---------- inactive (greyed-out) state ---------- */
+  .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;}
   .off{opacity:.45;}
   .off input,.off select,.off textarea,input:disabled,select:disabled,textarea:disabled,input[readonly]{background:#eef0f2;cursor:not-allowed;}
   fieldset.off{background:#f6f7f8;}
-
-  /* ---------- one-line-per-row tables (education / service) ---------- */
-  .rowgrid{display:grid;gap:8px 10px;align-items:end;margin-bottom:8px;}
-  .edu{grid-template-columns:170px 1.1fr 1.3fr 105px 80px 1.1fr;}
-  .svc{grid-template-columns:190px 1.6fr 150px 1.2fr;}
-  .rowhead{font-size:11px;font-weight:700;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:4px;align-items:end;}
-  .degree{font-size:12.5px;font-weight:700;color:var(--navy);padding-bottom:8px;}
+  .rowgrid{display:grid;gap:8px 12px;align-items:end;margin-bottom:10px;}
+  .edu{grid-template-columns:190px 1.1fr 1.3fr 105px 80px 1.1fr;}
+  .svc{grid-template-columns:230px 1.6fr 160px 1.2fr;}
+  .rowhead{font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;border-bottom:2px solid var(--line);padding-bottom:6px;align-items:end;}
+  .degree{font-size:13px;font-weight:700;color:var(--navy);padding-bottom:11px;}
   .cell{min-width:0;}
-  .mlabel{display:none;font-size:10.5px;color:var(--muted);font-weight:600;margin-bottom:2px;}
+  .mlabel{display:none;font-size:11px;color:var(--muted);font-weight:600;margin-bottom:3px;}
+  /* success dialog */
+  .overlay{position:fixed;inset:0;background:rgba(10,24,40,.6);display:none;align-items:center;justify-content:center;z-index:100;padding:16px;}
+  .overlay.show{display:flex;}
+  .dialog{background:#fff;border-radius:16px;padding:30px 28px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.35);}
+  .dialog .tick{width:64px;height:64px;border-radius:50%;background:#e2f3e8;color:var(--ok);font-size:34px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
+  .dialog h2{margin:0 0 6px;color:var(--navy);font-size:20px;}
+  .dialog p{margin:0 0 12px;color:var(--muted);font-size:13.5px;line-height:1.5;}
+  .dialog .ref{background:var(--soft);border:1px dashed #b8c3d0;border-radius:8px;padding:8px;font-family:Consolas,monospace;font-size:13px;color:var(--navy);margin-bottom:16px;word-break:break-all;}
   @media(max-width:760px){
+    header{padding:20px 14px 34px;} header h1{font-size:18px;}
     .rowhead{display:none;}
-    .edu,.svc{grid-template-columns:1fr 1fr;padding:10px 0;border-bottom:1px dashed var(--line);}
+    .edu,.svc{grid-template-columns:1fr 1fr;padding:12px 0;border-bottom:1px dashed var(--line);}
     .degree{grid-column:1/-1;padding-bottom:0;}
     .mlabel{display:block;}
     .cell.empty{display:none;}
-    .actions{flex-wrap:wrap;}
+    fieldset > *:not(legend){margin-left:14px;margin-right:14px;}
+    .btn{width:100%;} .progress span{min-width:70px;font-size:11px;}
   }
 </style>
 </head>
 <body>
 <header>
+  <div class="crest">🏫</div>
   <h1>Pension / Superannuation Data Collection Form</h1>
-  <p>Please fill in your school's details and your own details accurately, in BLOCK LETTERS where possible.</p>
+  <p>Please fill in your school's details and your own details accurately, in BLOCK LETTERS where possible. Fields marked <b>*</b> are compulsory. Fields that do not apply to you switch off automatically.</p>
 </header>
+<div class="progress"><div class="bar"><i id="progFill"></i></div><span id="progTxt">0% filled</span></div>
 
 <div class="wrap">
   <div id="topStatus" class="status"></div>
   <form id="pensionForm" onsubmit="return false"></form>
 </div>
 
+<div class="hp" aria-hidden="true"><label>Website <input type="text" id="hpWebsite" tabindex="-1" autocomplete="off"></label></div>
+
 <div class="actions">
-  <button class="btn btn-primary" id="btnSubmit" type="button">Submit</button>
-  <button class="btn btn-wa" id="btnWA" type="button">Share JSON on WhatsApp</button>
+  <button class="btn btn-primary" id="btnSubmit" type="button">Submit Details</button>
+</div>
+
+<div class="overlay" id="doneOverlay">
+  <div class="dialog">
+    <div class="tick">✓</div>
+    <h2>Submitted successfully</h2>
+    <p>Thank you. Your pension details have reached the school office. No further action is needed.</p>
+    <div class="ref">Reference: <span id="refId">-</span></div>
+    <button class="btn btn-primary" id="btnDone" type="button">OK</button>
+  </div>
 </div>
 
 <script>
-// Live Web App URL linked to your NEW Apps Script deployment
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwnKAup9d2Gq9sAFPuuV87zQaq3wuwvEIi-fHTWnxZRa_wI9-hF7K_bE9lPqYMTm0WBZA/exec";
+// Live Web App URL (Apps Script deployment that writes to the TFHS Pension Collection sheet)
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyvcaz2-XtfF3lmuAM7jW23_41ammx2CXchN0Q4e8B4bahj-loepPuGkyC4eg68MdZcFw/exec";
 
 const DESIGNATIONS = ["ASSISTANT TEACHER","CLERK","GR-D STAFF","HEADMASTER","HEADMISTRESS","AHM","LIBRARIAN","TEACHER-IN-CHARGE"];
 const GRADE_PAYS = ["1700","1800","2600","2900","3900","4100","4400","4700","4800","5400"];
@@ -85,8 +117,6 @@ const CHARGE_CAUSES = ["Superannuation Retirement From Service","Resignation fro
 const ADMIN_STATUSES = ["President [M.C.]","Member Secretary [Ad-hoc Committee]","Administrator","Secretary [M.C.]"];
 const HOI_DESIGNATIONS = ["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"];
 const EMAIL_DEFAULT = "@gmail.com";
-const WA_NUMBER = "919434654678";   // 91 = India country code
-let lastData = null;                // last submitted data (form resets after submit)
 
 /* ---------- field groups that switch on/off ---------- */
 const CHARGE_FIELDS  = ["chargeHandOverCause","chargeHandOverToName","chargeHandOverToPost","chargeHandOverDate","ticChargeFrom"];
@@ -266,12 +296,12 @@ function serviceHtml(sec){
 
 function render(){
   const form = document.getElementById("pensionForm");
-  form.innerHTML = SECTIONS.map(sec => {
+  form.innerHTML = SECTIONS.map((sec, idx) => {
     let body;
     if(sec.layout === "edu") body = eduHtml();
     else if(sec.layout === "service") body = serviceHtml(sec);
     else body = `${sec.note ? `<p class="note">${sec.note}</p>` : ""}<div class="form-grid">${sec.fields.map(fieldHtml).join("")}</div>`;
-    return `<fieldset${sec.id ? ` id="${sec.id}"` : ""}><legend>${sec.title}</legend>${body}</fieldset>`;
+    return `<fieldset${sec.id ? ` id="${sec.id}"` : ""}><legend><span class="secno">${idx+1}</span>${sec.title}</legend>${body}</fieldset>`;
   }).join("");
   $("schoolMail").value = EMAIL_DEFAULT;
   applyRules();
@@ -366,56 +396,62 @@ formEl.addEventListener("blur", e => {
 }, true);
 
 $("btnSubmit").addEventListener("click", async () => {
+  document.querySelectorAll(".bad").forEach(x => x.classList.remove("bad"));
   const data = collect();
+  const mark = id => { const el = $(id); if(el) el.classList.add("bad"); };
 
-  if(!data.staffName) return fail("Please enter your Name of the Staff before submitting.", "staffName");
-  if($("prevCount").value === "") return fail("Please select the number of previous schools (select 0 if none).", "prevCount");
+  if(!data.staffName){ mark("staffName"); return fail("Please enter your Name of the Staff before submitting.", "staffName"); }
+  if($("prevCount").value === ""){ mark("prevCount"); return fail("Please select the number of previous schools (select 0 if none).", "prevCount"); }
 
-  if(data.schoolMail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.schoolMail))
-    return fail("Please enter a valid School e-Mail ID (e.g. name@gmail.com).", "schoolMail");
-
+  if(data.schoolMail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.schoolMail)){
+    mark("schoolMail"); return fail("Please enter a valid School e-Mail ID (e.g. name@gmail.com).", "schoolMail");
+  }
   if(data.commutationOpted === "YES"){
     const c = parseFloat(data.commutationPercent);
-    if(isNaN(c) || c <= 0 || c > 100) return fail("Please enter the Commutation % as a whole number, e.g. 40.", "commutationPercent");
-    if(c < 1) return fail("Commutation % looks like a fraction. Enter 40 for 40% (not 0.4).", "commutationPercent");
-  }
-
-  if(WEB_APP_URL.includes("YOUR_DEPLOYMENT_ID")){
-    return fail("This form isn't wired to a live endpoint yet — set WEB_APP_URL near the top of the script.");
+    if(isNaN(c) || c <= 0 || c > 100){ mark("commutationPercent"); return fail("Please enter the Commutation % as a whole number, e.g. 40.", "commutationPercent"); }
+    if(c < 1){ mark("commutationPercent"); return fail("Commutation % looks like a fraction. Enter 40 for 40% (not 0.4).", "commutationPercent"); }
   }
 
   const btn = $("btnSubmit");
   btn.disabled = true; btn.textContent = "Submitting…";
   try{
-    await fetch(WEB_APP_URL, {
+    // text/plain avoids the CORS pre-flight that Apps Script cannot answer
+    const res = await fetch(WEB_APP_URL, {
       method: "POST",
-      mode: "no-cors",
       headers: {"Content-Type": "text/plain;charset=utf-8"},
-      body: JSON.stringify(data)
+      body: JSON.stringify({data: data, website: $("hpWebsite").value || ""})
     });
-    lastData = data;
-    render();
-    showStatus("Thank you — your details have been submitted. You may also tap \"Share JSON on WhatsApp\" to send a copy.", "ok");
+    const out = await res.json();
+    if(!out.ok) throw new Error(out.error || "The server did not accept the submission");
+    $("refId").textContent = out.submissionId || "-";
+    $("doneOverlay").classList.add("show");
+    $("topStatus").className = "status";
+    render();                       // clear the form ONLY after the server confirmed
+    updateProgress();
   }catch(err){
-    showStatus("Submission failed: " + (err.message || err) + ". Please check your internet connection and try again.", "err");
+    showStatus("Submission failed: " + (err.message || err) + ". Your entries are still on this page — please check your internet connection and tap Submit again.", "err");
   }finally{
-    btn.disabled = false; btn.textContent = "Submit";
+    btn.disabled = false; btn.textContent = "Submit Details";
   }
 });
 
-$("btnWA").addEventListener("click", () => {
-  let data = collect();
-  if(!data.staffName){
-    if(lastData) data = lastData;
-    else return fail("Please fill in the form (at least the Name of the Staff) before sharing.", "staffName");
-  }
-  const clean = {};
-  Object.keys(data).forEach(k => { if(data[k] !== "") clean[k] = data[k]; });
-  const text = JSON.stringify(clean, null, 1);
-  window.open("https://wa.me/" + WA_NUMBER + "?text=" + encodeURIComponent(text), "_blank");
-});
+$("btnDone").addEventListener("click", () => { $("doneOverlay").classList.remove("show"); window.scrollTo({top:0,behavior:"smooth"}); });
+
+/* ---------- progress bar ---------- */
+function updateProgress(){
+  const els = [...document.querySelectorAll("#pensionForm input, #pensionForm select, #pensionForm textarea")]
+    .filter(el => el.id && !el.dataset.skip && !el.disabled && !el.readOnly);
+  if(!els.length) return;
+  const filled = els.filter(el => (el.value||"").trim() && !(el.id==="schoolMail" && el.value===EMAIL_DEFAULT)).length;
+  const pct = Math.round(filled*100/els.length);
+  $("progFill").style.width = pct + "%";
+  $("progTxt").textContent = pct + "% filled";
+}
+formEl.addEventListener("input", updateProgress);
+formEl.addEventListener("change", updateProgress);
 
 render();
+updateProgress();
 </script>
 </body>
 </html>
