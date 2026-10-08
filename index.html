@@ -119,6 +119,7 @@ const HOI_DESIGNATIONS = ["HEADMASTER","HEADMISTRESS","TEACHER-IN-CHARGE"];
 const EMAIL_DEFAULT = "@gmail.com";
 
 /* ---------- field groups that switch on/off ---------- */
+const ADMIN_FIELDS   = ["adminName","adminMobile"];
 const CHARGE_FIELDS  = ["chargeHandOverCause","chargeHandOverToName","chargeHandOverToPost","chargeHandOverDate","ticChargeFrom"];
 const SPOUSE_SERVICE = ["spouseOffice","spouseDept","spouseDoj","spouseDesignation"];
 
@@ -135,7 +136,9 @@ const SECTIONS = [
     {id:"diseCode", label:"DISE / UDISE Code of School", type:"text"},
     {id:"treasury", label:"Treasury", type:"text"},
     {id:"hoiStatus", label:"Present HOI Status", type:"select", options:DESIGNATIONS},
-    {id:"adminStatus", label:"Administrative Status (M.C. post)", type:"select", options:ADMIN_STATUSES}
+    {id:"adminStatus", label:"Administrative Status (M.C. post)", type:"select", options:ADMIN_STATUSES},
+    {id:"adminName", label:"Name of Administrator / President [M.C.]", type:"text", hint:"Fill only if the employee is the HOI (Headmaster / Headmistress / Teacher-in-Charge) - the HOI-side declarations are then signed by the Administrator."},
+    {id:"adminMobile", label:"Administrator Mobile No.", type:"text"}
   ]},
   { title:"Employee Details", fields:[
     {id:"staffName", label:"Name of the Staff", type:"text", required:true},
@@ -207,6 +210,9 @@ const SECTIONS = [
     {id:"chargeHandOverDate", label:"Charge Hand-over Date of Execution", type:"date"},
     {id:"ticChargeFrom", label:"T.I.C. Charge From (existing user-id date)", type:"date"},
     {id:"cpcName", label:"CPC Name / Address (Circle Project Co-ordinator)", type:"text"}
+  ]},
+  { title:"Employee Declaration (D.I. Instruction)", note:"The date of your own declarations regarding pending Court case / litigation and outstanding Bank / Society loan. This date is printed in the HOI's declarations and in your declaration papers.", fields:[
+    {id:"declDate", label:"Date of Employee's Declaration", type:"date"}
   ]}
 ];
 
@@ -354,6 +360,7 @@ function applyRules(){
   // 4. Charge hand-over only for HM / HMistress / TIC
   const isHoi = HOI_DESIGNATIONS.includes($("designation").value);
   setOn(CHARGE_FIELDS, isHoi);
+  setOn(ADMIN_FIELDS, isHoi);
   $("chargeSection").classList.toggle("off", !isHoi);
 }
 
