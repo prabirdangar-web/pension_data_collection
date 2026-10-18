@@ -21,7 +21,7 @@
   .wrap{max-width:1040px;margin:22px auto;padding:0 16px 120px;}
   fieldset{border:none;border-radius:12px;padding:0 0 20px;margin:0 0 20px;background:var(--card);min-width:0;box-shadow:0 1px 3px rgba(16,35,60,.08),0 6px 18px rgba(16,35,60,.05);overflow:hidden;}
   legend{float:left;width:100%;padding:13px 20px;margin:0 0 18px;font-size:15px;font-weight:700;color:var(--navy);background:linear-gradient(90deg,#f1f5fa,#fff);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;}
-  legend + *{clear:both;}
+  legend ~ *{clear:both;}
   fieldset > *:not(legend){margin-left:20px;margin-right:20px;}
   .secno{width:26px;height:26px;border-radius:50%;background:var(--navy);color:#fff;font-size:13px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 26px;}
   .form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px 20px;}
@@ -94,6 +94,9 @@
   .bn-guide ol{margin:0;padding-left:22px;font-size:14px;line-height:1.85;color:var(--ink);}
   .bn-guide mark{background:#ffe27a;color:#222;padding:0 3px;border-radius:3px;font-weight:700;animation:markGlow 1.4s ease-in-out infinite alternate;}
   @keyframes markGlow{from{background:#ffe27a;}to{background:#ffc83d;}}
+  .id-chip{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 10px;font-size:13px;}
+  .id-chip b{min-width:84px;color:var(--muted);}
+  .id-chip code{background:#eef3f7;border:1px solid var(--line);border-radius:4px;padding:3px 8px;font-size:14px;font-weight:700;word-break:break-all;}
   .dialog.wide{max-width:640px;max-height:88vh;overflow:auto;}
   .dialog .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
 
@@ -151,15 +154,16 @@
   <div class="dialog wide">
     <h2 class="bn">পেনশনের স্ট্যাটাস দেখার নিয়ম</h2>
     <div class="bn-guide bn">
-      <h4>বাংলা গাইড — e-Pension (W.B.)</h4>
+      <h4>বাংলা গাইড — e-Pension (W.B.) পেনশন স্ট্যাটাস</h4>
+      <div class="id-chip"><b>Employee ID</b><code id="guideEmpId">—</code><button class="btn btn-ghost btn-sm" id="btnCopyEmpId" type="button">Copy</button></div>
       <ol>
-        <li>নিচের <mark>Open e-Pension Portal</mark> বোতামে ক্লিক করুন — নতুন ট্যাবে <mark>epension.wb.gov.in</mark> খুলবে।</li>
-        <li>ইন্টারনেট চালু থাকা মোবাইল বা কম্পিউটারে হোমপেজে এসে <mark>Login</mark> অংশে যান। স্কুলের <b>HOI User ID</b> অথবা নিজের <b>Applicant Login</b> ব্যবহার করুন।</li>
-        <li>লগইনের পর ড্যাশবোর্ডে <mark>Application Status / Track Application / PPO</mark> সংক্রান্ত অপশনটি খুঁজুন (পোর্টালের মেনুর নাম সময়ে সময়ে বদলাতে পারে)।</li>
-        <li>আপনার <mark>Application ID</mark>, <mark>Employee Code</mark> বা <mark>PPO No.</mark> দিয়ে আবেদনটি খুঁজুন।</li>
+        <li>নিচের <mark>Open e-Pension Portal</mark> বোতামে ক্লিক করুন — নতুন ট্যাবে <mark>epension.wb.gov.in</mark> খুলবে। এই কাজে <b>লগইন লাগবে না</b>।</li>
+        <li>হোমপেজে <mark>Pension Status Enquiry</mark> (পেনশন স্ট্যাটাস এনকোয়ারি) অপশনটি খুঁজে ক্লিক করুন।</li>
+        <li><mark>Search By</mark>-এ <mark>Employee ID</mark> বেছে নিন। এখানে <b>PPO নম্বর দিয়ে খোঁজার অপশন নেই</b> — তাই PPO নম্বর লিখবেন না।</li>
+        <li>উপরের <mark>Employee ID</mark> (আপনার Employee Code) কপি করে ঘরে বসান, <mark>Captcha</mark> লিখে <mark>Search</mark> করুন।</li>
         <li>দেখুন আবেদনটি এখন কোন স্তরে আছে — <mark>স্কুল / ডি.আই. অফিস / DPPG</mark> — এবং শেষ কোন তারিখে কী হয়েছে। স্ক্রিনশট রেখে দিন।</li>
-        <li>কোনো <mark>Returned / Objection</mark> দেখালে কারণটি মন দিয়ে পড়ুন এবং স্কুল অফিসে জানান। এই ফর্মে কোনো তথ্য ভুল থাকলে সংশোধন করে <mark>Resubmit</mark> করুন।</li>
-        <li><b>PPO</b> ইস্যু হয়ে গেলে PPO নম্বর ও মেমো নম্বর এই ফর্মের <b>Pay &amp; Pension Inputs</b> অংশে লিখে <mark>Resubmit</mark> করুন, অথবা স্কুল অফিসে জানান।</li>
+        <li>কোনো <mark>Returned / Objection</mark> দেখালে কারণটি পড়ে স্কুল অফিসে জানান। এই ফর্মে কোনো তথ্য ভুল থাকলে সংশোধন করে <mark>Resubmit Updated Details</mark> চাপুন।</li>
+        <li>PPO ইস্যু হয়ে গেলে PPO নম্বর <b>এই ফর্মের</b> <b>Pay &amp; Pension Inputs</b> অংশে লিখে Resubmit করুন, অথবা স্কুল অফিসে জানান।</li>
       </ol>
     </div>
     <div class="row">
@@ -594,8 +598,19 @@ formEl.addEventListener("change", updateSubmitUi);
 
 /* ---------- flashing pension-status guide ---------- */
 const openEpension = () => window.open(EPENSION_URL, "_blank", "noopener");
-$("btnOpenEpension").addEventListener("click", () => $("guideOverlay").classList.add("show"));
-$("btnPensionGuide").addEventListener("click", () => $("guideOverlay").classList.add("show"));
+function showGuide(){
+  const code = ($("employeeCode").value || "").trim();
+  $("guideEmpId").textContent = code || "(ফর্মের Employee Code ঘরে লিখুন)";
+  $("btnCopyEmpId").style.display = code ? "" : "none";
+  $("guideOverlay").classList.add("show");
+}
+$("btnOpenEpension").addEventListener("click", openEpension);          // straight to epension.wb.gov.in
+$("btnPensionGuide").addEventListener("click", showGuide);
+$("btnCopyEmpId").addEventListener("click", async () => {
+  const b = $("btnCopyEmpId"), t = ($("employeeCode").value || "").trim();
+  try{ await navigator.clipboard.writeText(t); b.textContent = "Copied ✓"; }catch(e){ b.textContent = "Select & copy"; }
+  setTimeout(() => { b.textContent = "Copy"; }, 1500);
+});
 $("btnGuideOpen").addEventListener("click", openEpension);
 $("btnGuideClose").addEventListener("click", () => $("guideOverlay").classList.remove("show"));
 $("guideOverlay").addEventListener("click", e => { if(e.target.id === "guideOverlay") $("guideOverlay").classList.remove("show"); });
